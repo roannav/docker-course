@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  mongo:
+    image: mongo:6.0
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - '27017:27017'
+
+  next:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/favorite-songs
+    ports:
+      - '3000:3000'
+    depends_on:
+      - mongo
+
+  next-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/favorite-songs
+    volumes:
+      - .:/app:cached
+    ports:
+      - '3001:3000'
+    depends_on:
+      - mongo
+
+volumes:
+  mongo-data:
