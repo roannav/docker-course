@@ -1,0 +1,132 @@
+# src:  https://www.youtube.com/watch?v=GFgJkfScVNU
+# specify the version of the compose file
+version: '3.8'
+
+# define the services/containers to be run
+services:
+  # define the frontend service
+  # we can use any name for the service.
+  # A standard naming convention is to use "web" for the frontend service.
+  web:
+    # we use depends_on to specify that service depends on another service.
+    # In this case, we specify that the web depends on the api service.
+    # This means that the api service will be started before the web service.
+    depends_on:
+      - api
+    # specify the build context for the web service.
+    # This is the directory that contains the Dockerfile, with the web service code.
+    build: ./frontend
+    # specify the ports to expose for the web service.
+    # The first number is the port on the host machine.
+    # The second number is the port inside the container.
+    # So in this case, we are exposing the port 5173 on the host machine
+    # to the port 5173 on the container.
+    ports:
+      - 5173:5173
+    # specify the environment variables for the web service.
+    # These environment variables will be available inside the container
+    # (ie to the web service).
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+    # this is for docker compose watch mode.
+    # anything mentioned under develop will be watched for changes by
+    # docker compose watch and it will perform the action mentioned 
+    #under the watch path.
+    develop:
+      # specify the files to watch for changes.
+      watch:
+        # it'll watch for changes in package.json and package-lock.json
+        # and rebuilt the container if there are any changes.
+        - path: ./frontend/package.json
+          action: rebuild
+        - path: ./frontend/package-lock.json
+          action: rebuild
+        # it'll watch for changes in the frontend directory
+        # and sync the changes to the container in real time.
+        - path: ./frontend
+          target: /app
+          action: sync
+
+  # define the api service/container
+  api:
+    # api service depends on the MongoDB service.
+    # So the MongoDB service will be started before the api service.
+    depends_on:
+      - db
+
+    # specify the build context for the api service.
+    # This is the directory that contains the Dockerfile, with the api service code.
+    build: ./backend
+
+    # specify the ports to expose for the api service.
+    # The first number is the port on the host machine.
+    # The second number is the port inside the container.
+    # So in this case, we are exposing the port 8000 on the host machine to
+    # the port 8000 on the container.
+    ports:
+      - "8000:8000"
+
+    # specify the environment variables for the api service.
+    # These environment variables will be available inside the container
+    # (ie to the api service).
+    # for demo purposes, we're using a local MongoDB instance.
+    environment:
+      DB_URL: mongodb://db/anime
+
+    # establish docker compose watch mode for the api service.
+    # any files mentioned under develop will be watched for changes by
+    # docker compose watch and it will perform the action mentioned
+    # under the watch.
+    develop:
+      watch:
+        # it'll watch for changes in package.json and package-lock.json
+        # and rebuild the container and image if there are any changes.
+        - path: ./backend/package.json
+          action: rebuild
+        - path: ./backend/package-lock.json
+          action: rebuild
+        
+        # it'll watch for changes in the backend directory
+        # and sync the changes to the container in real time.
+        - path: ./backend
+          target: /app
+          action: sync
+
+  # define the db service/container
+  db:
+    # specify the image to use for the db service from the docker hub.
+    # If we have a custom image locally, we can use it instead of pulling
+    # from the docker hub.  We can specify the image to use for the 
+    # db service by using the image: <image_name> syntax.
+    # In this case, we are using the mongo:latest image from the docker hub.
+
+    # In the above two services, we are using the build context to build
+    # the image for the service from the Dockerfile so we specify the image
+    # as "build: ./frontend" or "build: ./backend".
+    # But for the db service, we are using the image from the docker hub
+    # so we specify the image as "image: mongo:latest".
+    # you can find the image name and tag for mongodb in the docker hub:
+    # https://hub.docker.com/_/mongo
+    image: mongo:latest
+
+    # specify the ports to expose for the db service.
+    # generally, we do this in api service using MongoDB atlas.
+    # But for demo purposes, we're using a local MongoDB instance here.
+    # Usually, MongoDB container is exposed on port 27017.
+    # So we are exposing the port 27017 on the host machine and mapping it
+    # to the port 27017 inside the container.
+    ports:
+      - "27017:27017"
+
+    # specify the volumes to mount for the db service.
+    # we're mounting the volumn named "anime" inside the container
+    # at /data/db directory.
+    # This is done to persist the data inside the MongoDB container,
+    # between container restarts.
+    volumes:
+      - anime:/data/db
+
+# define the volumes to be used by the services 
+volumes:
+  anime:
